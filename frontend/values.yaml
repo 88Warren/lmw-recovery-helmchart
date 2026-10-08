@@ -1,6 +1,6 @@
-namespace: lmw-fitness
+namespace: lmw-recovery
 env: production
-allowedOrigin: https://www.lmwfitness.co.uk,https://lmwfitness.co.uk
+allowedOrigin: https://www.lmwrecovery.co.uk,https://lmwrecovery.co.uk
 replicaCount: 1
 image:
   pullPolicy: Always
@@ -8,27 +8,27 @@ storage:
   storageClass: standard
 webserver:
   image:
-    repository: index.docker.io/lmwcode/lmw-fitness-frontend
+    repository: index.docker.io/lmwcode/lmw-recovery-frontend
     # tag: v.<+pipeline.sequenceId>
     # tag: <+serviceVariables.tag>
-    tag: v1.3.7
+    tag: v1.0.0
   port: 5052
   type: NodePort
-  host: www.lmwfitness.co.uk
+  host: www.lmwrecovery.co.uk
   path: /
   pathType: Prefix
   recaptcha: 6Ldn3-0qAAAAAMWv4iekZdMl4Xrfj2Av2zEL7onD
-  backendUrl: "https://api.lmwfitness.co.uk"
+  backendUrl: "https://api.lmwrecovery.co.uk"
   applicationType: frontend
 api:
-  host: api.lmwfitness.co.uk
+  host: api.lmwrecovery.co.uk
   port: 8082
   path: /api/
   pathType: Prefix
   applicationType: backend
 
 # blue
-backendServiceHost: lmwfitness-backend-service # Blue frontend (k get svc lmwfitness-frontend-service -n lmw-fitness -o yaml. Selector = colour)
+backendServiceHost: lmwrecovery-backend-service # Blue frontend (k get svc lmwfitness-frontend-service -n lmw-fitness -o yaml. Selector = colour)
 
 # green
 # backendServiceHost: lmwfitness-backend-service-stage # Green frontend

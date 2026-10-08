@@ -14,7 +14,7 @@ data:
     http {
       server {
         listen 5052;
-        server_name lmwfitness.co.uk www.lmwfitness.co.uk;
+        server_name lmwrecovery.co.uk www.lmwrecovery.co.uk;
         include       /etc/nginx/mime.types;
         default_type  application/octet-stream;
 

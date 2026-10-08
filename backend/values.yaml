@@ -1,8 +1,8 @@
-namespace: lmw-fitness
+namespace: lmw-recovery
 env: production
-allowedOrigin: https://www.lmwfitness.co.uk
+allowedOrigin: https://www.lmwrecovery.co.uk
 allowCredentials: false
-frontend_url: https://www.lmwfitness.co.uk
+frontend_url: https://www.lmwrecovery.co.uk
 replicaCount: 1
 platform: linux/amd64
 image:
@@ -11,11 +11,11 @@ storage:
   storageClass: standard
 api:
   image:
-    repository: index.docker.io/lmwcode/lmw-fitness-backend
+    repository: index.docker.io/lmwcode/lmw-recovery-backend
     # tag: v.<+pipeline.sequenceId>
     # tag: <+serviceVariables.tag>
     tag: v1.2.2
-  host: api.lmwfitness.co.uk
+  host: api.lmwrecovery.co.uk
   port: 8082
   path: /api/
   type: ClusterIP
@@ -25,7 +25,7 @@ api:
 images:
   directory: images
 database:
-  name: lmwfitness
+  name: lmwrecovery
   user: lmwcode
   port: 5432
   type: ClusterIP
@@ -33,32 +33,15 @@ database:
   sslMode: disable
   host: 217.154.57.170
 webserver:
-  host: www.lmwfitness.co.uk
+  host: www.lmwrecovery.co.uk
 smtp:
   host: smtp.ionos.co.uk
   port: 587
-  username: info@lmwfitness.co.uk
-  from: info@lmwfitness.co.uk
-  to: info@lmwfitness.co.uk
-brevo:
-  apiURL: https://api.brevo.com/v3
-  newsletter:
-    listID: 15
-    DOItemplateID: 2
-    DOIRedirectURL: https://www.lmwfitness.co.uk/newsletter/confirm
-  lists:
-    mindset: 17
-    beginner: 10
-    advanced: 12
-    tailoredCoaching: 14
-  templates:
-    mindsetPackage: 8
-    beginnerProgram: 6
-    advancedProgram: 7
-    tailoredCoaching: 9
-    orderConfirmation: 10
+  username: info@lmwrecovery.co.uk
+  from: info@lmwrecovery.co.uk
+  to: info@lmwrecovery.co.uk
 admin:
-  email: info@lmwfitness.co.uk
+  email: info@lmwrecovery.co.uk
 seedUser:
   email: warren_laura@yahoo.co.uk
 livenessProbe:

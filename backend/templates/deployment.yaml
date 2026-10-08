@@ -102,11 +102,6 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: REFRESH_SECRET_KEY
-        - name: BREVO_API_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: BREVO_API_KEY
         - name: STRIPE_SECRET_KEY
           valueFrom:
             secretKeyRef:
@@ -117,26 +112,6 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: STRIPE_WEBHOOK_SECRET
-        - name: BEGINNER_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: BEGINNER_PRICE_ID
-        - name: ADVANCED_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: ADVANCED_PRICE_ID
-        - name: TAILORED_COACHING_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: TAILORED_COACHING_PRICE_ID
-        - name: ULTIMATE_MINDSET_PACKAGE_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: ULTIMATE_MINDSET_PACKAGE_PRICE_ID
         - name: ADMIN_PASSWORD
           valueFrom:
             secretKeyRef:

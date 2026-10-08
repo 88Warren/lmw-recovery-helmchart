@@ -21,7 +21,7 @@ spec:
     metadata:
       labels:
         app: frontend
-        app.kubernetes.io/instance: lmwfitness-frontend
+        app.kubernetes.io/instance: lmwrecovery-frontend
     spec:
       containers:
       - name: {{ .Values.webserver.applicationType }}
@@ -76,26 +76,6 @@ spec:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: RECAPTCHA_SITE_KEY
-        - name: VITE_BEGINNER_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: BEGINNER_PRICE_ID
-        - name: VITE_ADVANCED_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: ADVANCED_PRICE_ID
-        - name: VITE_TAILORED_COACHING_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: TAILORED_COACHING_PRICE_ID
-        - name: VITE_ULTIMATE_MINDSET_PACKAGE_PRICE_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: ULTIMATE_MINDSET_PACKAGE_PRICE_ID
         volumeMounts:
         - name: frontend-config
           mountPath: /etc/nginx/nginx.conf
