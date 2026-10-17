@@ -60,7 +60,15 @@ data:
         }
 
         location /images/ {
-          proxy_pass https://{{ .Values.backendServiceHost }}:{{ .Values.api.port }}/images/;
+          # Serve the frontend's own bundled static images (e.g. /images/studio.jpg)
+          # directly from the build. Only if the file does not exist locally do we
+          # fall through to the backend, which serves dynamic/uploaded images.
+          root /usr/share/nginx/html;
+          try_files $uri @backend_images;
+        }
+
+        location @backend_images {
+          proxy_pass https://{{ .Values.backendServiceHost }}:{{ .Values.api.port }}$request_uri;
           proxy_set_header Host $host;
           proxy_set_header X-Real-IP $remote_addr;
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
