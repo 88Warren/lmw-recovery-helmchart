@@ -45,6 +45,19 @@ smtp:
   from: LMW Recovery <info@lmwrecovery.co.uk>
   to: info@lmwrecovery.co.uk
 
+# ── Studio location (shown in the booking confirmation email) ─────────────────
+# Leave address empty to keep the generic "Full address sent separately." line.
+# what3words may include or omit the leading /// — rendered as a clickable link.
+studio:
+  address: 45 Greenmeadow Ct, Llantrisant, Pontyclun CF72 8JH
+  what3words: portfolio.broken.lorry
+
+# ── Owner booking notifications (optional, free) ──────────────────────────────
+# Telegram is recommended (free, no limits). The chat ID is your personal
+# numeric chat ID (not the bot's). The bot TOKEN is a secret → see secrets below.
+telegram:
+  chatId: 7077156477
+
 # ── Brevo (optional — health questionnaire automation) ────────────────────────
 # Leave apiKey empty to disable. templateId/listId are only used when apiKey is set.
 brevo:
@@ -67,6 +80,8 @@ secrets:
   stripeWebhookSecret: ""
   brevoApiKey: ""
   recaptchaSecret: ""
+  # Telegram bot token from @BotFather (treat as a secret).
+  telegramBotToken: ""
 
 # ── Health probes (Go app serves GET /health) ─────────────────────────────────
 livenessProbe:

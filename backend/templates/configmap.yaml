@@ -20,3 +20,12 @@ data:
   {{- if .Values.brevo.listId }}
   BREVO_LIST_ID: "{{ .Values.brevo.listId }}"
   {{- end }}
+  {{- if .Values.studio.address }}
+  STUDIO_ADDRESS: "{{ .Values.studio.address }}"
+  {{- end }}
+  {{- if .Values.studio.what3words }}
+  STUDIO_WHAT3WORDS: "{{ .Values.studio.what3words }}"
+  {{- end }}
+  {{- if .Values.telegram.chatId }}
+  TELEGRAM_CHAT_ID: "{{ .Values.telegram.chatId }}"
+  {{- end }}

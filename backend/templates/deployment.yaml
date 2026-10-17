@@ -93,6 +93,12 @@ spec:
               name: {{ .Release.Name }}-secrets
               key: RECAPTCHA_SECRET
               optional: true
+        - name: TELEGRAM_BOT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: {{ .Release.Name }}-secrets
+              key: TELEGRAM_BOT_TOKEN
+              optional: true
         readinessProbe:
           httpGet:
             path: {{ .Values.readinessProbe.endpoint }}
