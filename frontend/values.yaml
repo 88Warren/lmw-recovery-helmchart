@@ -8,7 +8,9 @@ image:
   pullPolicy: Always
 
 storage:
-  storageClass: standard
+  # Cluster uses k3s local-path provisioner (the default StorageClass).
+  # The frontend chart has no PVC — this is kept only for consistency.
+  storageClass: local-path
 
 webserver:
   image:

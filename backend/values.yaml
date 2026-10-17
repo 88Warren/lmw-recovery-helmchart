@@ -33,7 +33,8 @@ database:
   path: /data/lmw.db
 
 storage:
-  storageClass: standard
+  # Cluster uses k3s local-path provisioner (the default StorageClass).
+  storageClass: local-path
   size: 1Gi
 
 # ── SMTP (Ionos) ──────────────────────────────────────────────────────────────
