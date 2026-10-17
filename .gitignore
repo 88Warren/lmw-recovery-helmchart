@@ -1,2 +1,11 @@
-backend/templates/secrets.yaml
-frontend/templates/secrets.yaml
+# Real secret VALUES live in a local-only values file, never in git.
+# The secrets.yaml TEMPLATE is safe to track — it only references .Values.
+# The secrets.example.yaml (placeholders only) IS tracked as documentation.
+secrets.*.yaml
+backend/secrets.*.yaml
+frontend/secrets.*.yaml
+
+# ...but keep the placeholder examples.
+!secrets.example.yaml
+!backend/secrets.example.yaml
+!frontend/secrets.example.yaml

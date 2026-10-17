@@ -1,52 +1,52 @@
 namespace: lmw-recovery
 env: production
+# Origins allowed by the nginx /api proxy CORS headers.
 allowedOrigin: https://www.lmwrecovery.co.uk,https://lmwrecovery.co.uk
 replicaCount: 1
+
 image:
   pullPolicy: Always
+
 storage:
   storageClass: standard
+
 webserver:
   image:
     repository: index.docker.io/lmwcode/lmw-recovery-frontend
-    # tag: v.<+pipeline.sequenceId>
-    # tag: <+serviceVariables.tag>
     tag: v1.0.0
+  # nginx listens on this port (see the nginx.conf in configmap.yaml: `listen 5052`).
   port: 5052
   type: NodePort
   host: www.lmwrecovery.co.uk
   path: /
   pathType: Prefix
-  recaptcha: 6Ldn3-0qAAAAAMWv4iekZdMl4Xrfj2Av2zEL7onD
-  backendUrl: "https://api.lmwrecovery.co.uk"
   applicationType: frontend
+  # NOTE: VITE_* values (backend URL, Stripe publishable key, GA id, reCAPTCHA)
+  # are baked into the static build at image-build time via frontend/.env.production.
+  # They are NOT consumed at runtime, so they are not configured here.
+
 api:
   host: api.lmwrecovery.co.uk
-  port: 8082
+  # Must match the backend service port (backend chart api.port = 8080).
+  port: 8080
   path: /api/
   pathType: Prefix
   applicationType: backend
 
-# blue
-backendServiceHost: lmwrecovery-backend-service # Blue frontend (k get svc lmwfitness-frontend-service -n lmw-fitness -o yaml. Selector = colour)
+# Backend Service that the nginx /api proxy and the ingress route to.
+backendServiceHost: lmwrecovery-backend-service
 
-# green
-# backendServiceHost: lmwfitness-backend-service-stage # Green frontend
-
-# switch colour
-# k patch svc lmwfitness-frontend-service -n lmw-fitness -p '{"spec":{"selector":{"harness.io/color":"green"}}}'
-# if caching delete ingress k -n ingress-nginx delete pod -l app.kubernetes.io/name=ingress-nginx
+# Probe tuning. The served path (webserver.path = "/") is what the deployment
+# actually probes — nginx serves the SPA there, not an /api/health endpoint.
 livenessProbe:
-  endpoint: /api/health/live
-  initialDelaySeconds: 60
+  initialDelaySeconds: 15
   timeoutSeconds: 5
-  periodSeconds: 120
+  periodSeconds: 30
   failureThreshold: 3
   successThreshold: 1
 readinessProbe:
-  endpoint: /api/health/ready
-  initialDelaySeconds: 60
+  initialDelaySeconds: 10
   timeoutSeconds: 5
-  periodSeconds: 120
+  periodSeconds: 20
   failureThreshold: 3
   successThreshold: 1

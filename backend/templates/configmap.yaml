@@ -4,17 +4,19 @@ metadata:
   name: {{ .Release.Name }}-configmap
   namespace: {{ .Values.namespace }}
 data:
-  GO_ENV: "{{ .Values.env }}"
-  ALLOWED_ORIGIN: "{{ .Values.allowedOrigin }}"
-  ALLOW_CREDENTIALS: "{{ .Values.allowCredentials }}"
-  FRONTEND_URL: "{{ .Values.frontend_url }}"
+  # Keys below MUST match the names read in backend/internal/config/config.go.
+  APP_ENV: "{{ .Values.env }}"
   PORT: "{{ .Values.api.port }}"
+  DB_PATH: "{{ .Values.database.path }}"
+  FRONTEND_ORIGIN: "{{ .Values.frontendOrigin }}"
   SMTP_HOST: "{{ .Values.smtp.host }}"
   SMTP_PORT: "{{ .Values.smtp.port }}"
-  SMTP_USERNAME: "{{ .Values.smtp.username }}"
-  SMTP_FROM: "{{ .Values.smtp.from }}"
-  SMTP_TO: "{{ .Values.smtp.to }}"
-  PLATFORM: "{{ .Values.platform }}"
-  SECRET_NAME: "{{ .Release.Name }}-secrets"
-  ADMIN_EMAIL: "{{ .Values.admin.email }}"
-  SEED_USER_EMAIL: "{{ .Values.seedUser.email }}"
+  SMTP_USER: "{{ .Values.smtp.username }}"
+  EMAIL_FROM: "{{ .Values.smtp.from }}"
+  EMAIL_TO: "{{ .Values.smtp.to }}"
+  {{- if .Values.brevo.templateId }}
+  BREVO_TEMPLATE_ID: "{{ .Values.brevo.templateId }}"
+  {{- end }}
+  {{- if .Values.brevo.listId }}
+  BREVO_LIST_ID: "{{ .Values.brevo.listId }}"
+  {{- end }}

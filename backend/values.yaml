@@ -1,60 +1,84 @@
+# ── Deployment basics ─────────────────────────────────────────────────────────
 namespace: lmw-recovery
+# APP_ENV for the Go backend (config.go reads APP_ENV; "production" → .env.production,
+# which is absent in the container so real env vars are used).
 env: production
-allowedOrigin: https://www.lmwrecovery.co.uk
-allowCredentials: false
-frontend_url: https://www.lmwrecovery.co.uk
 replicaCount: 1
 platform: linux/amd64
+
 image:
   pullPolicy: Always
-storage:
-  storageClass: standard
+
+# ── API container ─────────────────────────────────────────────────────────────
 api:
   image:
     repository: index.docker.io/lmwcode/lmw-recovery-backend
-    # tag: v.<+pipeline.sequenceId>
-    # tag: <+serviceVariables.tag>
     tag: v1.2.2
   host: api.lmwrecovery.co.uk
-  port: 8082
+  # Must match the Dockerfile EXPOSE and the Go app's default PORT.
+  port: 8080
   path: /api/
   type: ClusterIP
   protocol: TCP
   pathType: Prefix
   applicationType: backend
-images:
-  directory: images
+
+# CORS: the single frontend origin the Go app allows (config.go → FRONTEND_ORIGIN).
+frontendOrigin: https://www.lmwrecovery.co.uk
+
+# ── Database (SQLite on a persistent volume) ──────────────────────────────────
+# The Go backend uses an embedded SQLite file, not Postgres. The file lives on a
+# PersistentVolume mounted at /data (matches the Dockerfile's DB_PATH=/data/lmw.db).
 database:
-  name: lmwrecovery
-  user: lmwcode
-  port: 5432
-  type: ClusterIP
-  protocol: TCP
-  sslMode: disable
-  host: 217.154.57.170
-webserver:
-  host: www.lmwrecovery.co.uk
+  path: /data/lmw.db
+
+storage:
+  storageClass: standard
+  size: 1Gi
+
+# ── SMTP (Ionos) ──────────────────────────────────────────────────────────────
 smtp:
   host: smtp.ionos.co.uk
   port: 587
   username: info@lmwrecovery.co.uk
-  from: info@lmwrecovery.co.uk
+  from: LMW Recovery <info@lmwrecovery.co.uk>
   to: info@lmwrecovery.co.uk
-admin:
-  email: info@lmwrecovery.co.uk
-seedUser:
-  email: warren_laura@yahoo.co.uk
+
+# ── Brevo (optional — health questionnaire automation) ────────────────────────
+# Leave apiKey empty to disable. templateId/listId are only used when apiKey is set.
+brevo:
+  templateId: ""
+  listId: ""
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# These are rendered into the Kubernetes Secret by templates/secrets.yaml.
+# DO NOT commit real values here. Supply them at deploy time, e.g.:
+#   helm upgrade ... --set secrets.smtpPassword=... --set secrets.adminToken=...
+# or via a separate values file that is git-ignored:
+#   helm upgrade ... -f secrets.prod.yaml
+#
+# recaptchaSecret is intentionally empty: reCAPTCHA was removed from the frontend,
+# so the backend must skip verification (config.go treats "" as "no verification").
+secrets:
+  smtpPassword: ""
+  adminToken: ""
+  stripeSecretKey: ""
+  stripeWebhookSecret: ""
+  brevoApiKey: ""
+  recaptchaSecret: ""
+
+# ── Health probes (Go app serves GET /health) ─────────────────────────────────
 livenessProbe:
-  endpoint: /api/health/live
-  initialDelaySeconds: 60
+  endpoint: /health
+  initialDelaySeconds: 15
   timeoutSeconds: 5
-  periodSeconds: 120
+  periodSeconds: 30
   failureThreshold: 3
   successThreshold: 1
 readinessProbe:
-  endpoint: /api/health/ready
-  initialDelaySeconds: 60
+  endpoint: /health
+  initialDelaySeconds: 10
   timeoutSeconds: 5
-  periodSeconds: 120
+  periodSeconds: 20
   failureThreshold: 3
   successThreshold: 1

@@ -20,8 +20,10 @@ spec:
   template:
     metadata:
       labels:
-        app: frontend
-        app.kubernetes.io/instance: lmwrecovery-frontend
+        app: {{ .Values.webserver.applicationType }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
     spec:
       containers:
       - name: {{ .Values.webserver.applicationType }}
@@ -56,26 +58,9 @@ spec:
           periodSeconds: {{ .Values.livenessProbe.periodSeconds }}
           failureThreshold: {{ .Values.livenessProbe.failureThreshold }}
           successThreshold: {{ .Values.livenessProbe.successThreshold }}
-
-        envFrom:  
-          - configMapRef:
-              name: {{ .Release.Name }}-runtime-configmap
-        env:
-        - name: VITE_BACKEND_URL
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: BACKEND_URL
-        - name: VITE_STRIPE_PUBLISHABLE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: STRIPE_PUBLISHABLE_KEY
-        - name: VITE_RECAPTCHA_SITE_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: RECAPTCHA_SITE_KEY
+        # NOTE: This is a static Vite build served by nginx. All VITE_* config is
+        # baked into the JS at image build time (see frontend/Dockerfile), so the
+        # container reads NO runtime env vars — none are injected here.
         volumeMounts:
         - name: frontend-config
           mountPath: /etc/nginx/nginx.conf

@@ -4,7 +4,7 @@ metadata:
   name: {{ .Release.Name }}-deployment
   namespace: {{ .Values.namespace }}
   labels:
-    app: {{ .Values.webserver.applicationType }}
+    app: {{ .Values.api.applicationType }}
     app.kubernetes.io/managed-by: Helm
     app.kubernetes.io/instance: {{ .Release.Name }}
     app.kubernetes.io/name: {{ .Values.api.applicationType }}
@@ -13,6 +13,9 @@ metadata:
     meta.helm.sh/release-namespace: {{ .Values.namespace }}
 spec:
   replicas: {{ .Values.replicaCount }}
+  # SQLite is a single-writer file DB on a RWO volume — never roll two pods at once.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: {{ .Values.api.applicationType }}
@@ -24,38 +27,12 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
       annotations:
         checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secrets.yaml") . | sha256sum }}
     spec:
-      initContainers:
-      - name: wait-for-postgres
-        image: postgres:15
-        command: 
-        - "sh"
-        - "-c"
-        - |
-          echo "Waiting for PostgreSQL to be ready..."
-          until pg_isready -h {{ .Values.database.host }} -U "$DB_USER" -d "$DB_NAME" -p 5432; do
-            echo "PostgreSQL is not ready yet, waiting 5 seconds..."
-            sleep 5
-          done
-          echo "PostgreSQL is ready!"
-        env:
-        - name: DB_USER
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: DB_USER
-        - name: DB_NAME
-          valueFrom:
-            configMapKeyRef:
-              name: {{ .Release.Name }}-configmap
-              key: DB_NAME
-        resources:
-          requests:
-            memory: "16Mi"
-            cpu: "50m"
-          limits:
-            memory: "32Mi"
-            cpu: "100m"
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: {{ .Release.Name }}-data
       containers:
       - name: {{ .Values.api.applicationType }}
         image: {{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}
@@ -67,61 +44,55 @@ spec:
         resources:
           requests:
             memory: "128Mi"
-            cpu: "200m"
+            cpu: "100m"
           limits:
             memory: "256Mi"
             cpu: "500m"
+        volumeMounts:
+        - name: data
+          mountPath: /data
+        # Non-secret config
         envFrom:
         - configMapRef:
             name: {{ .Release.Name }}-configmap
+        # Secrets — each marked optional so an unset optional key doesn't block startup.
         env:
-        - name: DB_HOST
-          value: {{ .Values.database.host }}
-        - name: DB_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: DB_PASSWORD
-        - name: SMTP_PASSWORD 
+        - name: SMTP_PASSWORD
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: SMTP_PASSWORD
-        - name: RECAPTCHA_SECRET
+              optional: true
+        - name: ADMIN_TOKEN
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
-              key: RECAPTCHA_SECRET
-        - name: ACCESS_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: ACCESS_SECRET_KEY
-        - name: REFRESH_SECRET_KEY
-          valueFrom:
-            secretKeyRef:
-              name: {{ .Release.Name }}-secrets
-              key: REFRESH_SECRET_KEY
+              key: ADMIN_TOKEN
+              optional: true
         - name: STRIPE_SECRET_KEY
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: STRIPE_SECRET_KEY
+              optional: true
         - name: STRIPE_WEBHOOK_SECRET
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
               key: STRIPE_WEBHOOK_SECRET
-        - name: ADMIN_PASSWORD
+              optional: true
+        - name: BREVO_API_KEY
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
-              key: ADMIN_PASSWORD
-        - name: SEED_USER_PASSWORD
+              key: BREVO_API_KEY
+              optional: true
+        - name: RECAPTCHA_SECRET
           valueFrom:
             secretKeyRef:
               name: {{ .Release.Name }}-secrets
-              key: SEED_USER_PASSWORD
+              key: RECAPTCHA_SECRET
+              optional: true
         readinessProbe:
           httpGet:
             path: {{ .Values.readinessProbe.endpoint }}
@@ -144,7 +115,7 @@ spec:
           httpGet:
             path: {{ .Values.readinessProbe.endpoint }}
             port: {{ .Values.api.port }}
-          initialDelaySeconds: 30
-          periodSeconds: 10
+          initialDelaySeconds: 10
+          periodSeconds: 5
           failureThreshold: 30
           timeoutSeconds: 5
