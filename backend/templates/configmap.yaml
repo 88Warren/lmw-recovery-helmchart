@@ -27,5 +27,7 @@ data:
   STUDIO_WHAT3WORDS: "{{ .Values.studio.what3words }}"
   {{- end }}
   {{- if .Values.telegram.chatId }}
-  TELEGRAM_CHAT_ID: "{{ .Values.telegram.chatId }}"
+  # Rendered via int64/printf so a numeric chatId in values can't become
+  # scientific notation (e.g. 7.077156477e+09) — Telegram needs plain digits.
+  TELEGRAM_CHAT_ID: "{{ printf "%d" (int64 .Values.telegram.chatId) }}"
   {{- end }}

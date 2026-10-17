@@ -56,7 +56,10 @@ studio:
 # Telegram is recommended (free, no limits). The chat ID is your personal
 # numeric chat ID (not the bot's). The bot TOKEN is a secret → see secrets below.
 telegram:
-  chatId: 7077156477
+  # Quote the chat ID so YAML keeps it an exact string — an unquoted number can
+  # be parsed as a float and rendered as scientific notation (e.g. 7.07e+09),
+  # which Telegram rejects.
+  chatId: "7077156477"
 
 # ── Brevo (optional — health questionnaire automation) ────────────────────────
 # Leave apiKey empty to disable. templateId/listId are only used when apiKey is set.
