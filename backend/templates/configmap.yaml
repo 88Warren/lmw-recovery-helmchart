@@ -31,3 +31,13 @@ data:
   # scientific notation (e.g. 7.077156477e+09) — Telegram needs plain digits.
   TELEGRAM_CHAT_ID: "{{ printf "%d" (int64 .Values.telegram.chatId) }}"
   {{- end }}
+  # Site origin Stripe redirects back to after Checkout. Defaults to the
+  # frontend origin in the app if left unset here.
+  {{- if .Values.publicBaseURL }}
+  PUBLIC_BASE_URL: "{{ .Values.publicBaseURL }}"
+  {{- else }}
+  PUBLIC_BASE_URL: "{{ .Values.frontendOrigin }}"
+  {{- end }}
+  {{- if .Values.stripe.maintenancePriceId }}
+  STRIPE_MAINTENANCE_PRICE_ID: "{{ .Values.stripe.maintenancePriceId }}"
+  {{- end }}

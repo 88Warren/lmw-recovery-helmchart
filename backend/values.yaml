@@ -26,6 +26,16 @@ api:
 # CORS: the single frontend origin the Go app allows (config.go → FRONTEND_ORIGIN).
 frontendOrigin: https://www.lmwrecovery.co.uk
 
+# Site origin Stripe redirects back to after Checkout (success/cancel pages).
+# Defaults to frontendOrigin when empty.
+publicBaseURL: https://www.lmwrecovery.co.uk
+
+# Stripe non-secret config.
+stripe:
+  # Recurring Price ID (price_…) for the £80/month Maintenance Plan subscription,
+  # from the Stripe product catalogue. Required for maintenance subscriptions.
+  maintenancePriceId: price_1URvQf4IHQd6L6Kskj7MBqWq
+
 # ── Database (SQLite on a persistent volume) ──────────────────────────────────
 # The Go backend uses an embedded SQLite file, not Postgres. The file lives on a
 # PersistentVolume mounted at /data (matches the Dockerfile's DB_PATH=/data/lmw.db).
