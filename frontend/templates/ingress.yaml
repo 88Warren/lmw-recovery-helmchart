@@ -81,7 +81,11 @@ metadata:
     meta.helm.sh/release-namespace: {{ .Values.namespace }}
     nginx.ingress.kubernetes.io/ssl-redirect: "true"
     nginx.ingress.kubernetes.io/ssl-certificate: lmwrecovery-ssl
-    nginx.ingress.kubernetes.io/permanent-redirect: "https://{{ .Values.webserver.host }}$request_uri"
+    # Static target only — the ingress-nginx admission webhook rejects nginx
+    # variables (e.g. $request_uri) in this annotation. For a single-page
+    # marketing site www has no deep URLs worth preserving, so sending every
+    # www request to the canonical apex root is fine.
+    nginx.ingress.kubernetes.io/permanent-redirect: "https://{{ .Values.webserver.host }}/"
     nginx.ingress.kubernetes.io/permanent-redirect-code: "301"
 spec:
   ingressClassName: nginx
