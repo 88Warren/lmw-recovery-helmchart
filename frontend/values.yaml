@@ -1,6 +1,10 @@
 namespace: lmw-recovery
 env: production
-# Origins allowed by the nginx /api proxy CORS headers.
+# NOTE: no longer wired into the nginx /api proxy — CORS origins are now
+# resolved by a `map` block in configmap.yaml that echoes a single matching
+# origin (a comma list is invalid in Access-Control-Allow-Origin). The backend
+# API (api.lmwrecovery.co.uk), which the browser actually calls, enforces CORS
+# via its FRONTEND_ORIGIN env (see backend/.env.example). Kept for reference.
 allowedOrigin: https://www.lmwrecovery.co.uk,https://lmwrecovery.co.uk
 replicaCount: 1
 
@@ -19,7 +23,14 @@ webserver:
   # nginx listens on this port (see the nginx.conf in configmap.yaml: `listen 5052`).
   port: 5052
   type: NodePort
-  host: www.lmwrecovery.co.uk
+  # Canonical host that serves the site. Matches the canonical/sitemap/og:url
+  # and all structured data in frontend/index.html, which use the bare
+  # (non-www) domain. The www host below 301-redirects here so only one
+  # version is served and indexed.
+  host: lmwrecovery.co.uk
+  # The www alias. Covered by the same TLS cert and 301-redirected to the
+  # canonical apex host above (see ingress.yaml).
+  wwwHost: www.lmwrecovery.co.uk
   path: /
   pathType: Prefix
   applicationType: frontend

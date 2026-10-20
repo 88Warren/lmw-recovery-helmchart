@@ -23,12 +23,17 @@ api:
   pathType: Prefix
   applicationType: backend
 
-# CORS: the single frontend origin the Go app allows (config.go → FRONTEND_ORIGIN).
-frontendOrigin: https://www.lmwrecovery.co.uk
+# CORS: frontend origin(s) the Go app allows (config.go → FRONTEND_ORIGIN).
+# Comma-separated; the API echoes back whichever matches the request. Include
+# both the canonical apex and the www alias so calls work during the www→apex
+# redirect and if anyone lands on www directly.
+frontendOrigin: https://lmwrecovery.co.uk,https://www.lmwrecovery.co.uk
 
 # Site origin Stripe redirects back to after Checkout (success/cancel pages).
-# Defaults to frontendOrigin when empty.
-publicBaseURL: https://www.lmwrecovery.co.uk
+# Must be a SINGLE URL (not a list) — use the canonical apex; www 301s to it.
+# Defaults to frontendOrigin when empty, so set it explicitly now that
+# frontendOrigin is a comma-separated list.
+publicBaseURL: https://lmwrecovery.co.uk
 
 # Stripe non-secret config.
 stripe:

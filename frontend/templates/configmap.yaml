@@ -12,11 +12,42 @@ data:
   nginx.conf: |
     events {}
     http {
+      # Resolve the request Origin to a single allowed value for CORS. The
+      # Access-Control-Allow-Origin header may only contain ONE origin, so we
+      # echo back the matching one (or empty, which omits the header) rather
+      # than a comma-joined list, which is invalid per the CORS spec.
+      map $http_origin $cors_allow_origin {
+        default                           "";
+        "https://lmwrecovery.co.uk"       "https://lmwrecovery.co.uk";
+        "https://www.lmwrecovery.co.uk"   "https://www.lmwrecovery.co.uk";
+      }
+
       server {
         listen 5052;
         server_name lmwrecovery.co.uk www.lmwrecovery.co.uk;
         include       /etc/nginx/mime.types;
         default_type  application/octet-stream;
+
+        # ── Security headers ──────────────────────────────────────────
+        # Applied to every response this server block serves (the SPA).
+        # HSTS is intentionally NOT set here — it belongs on the TLS-
+        # terminating ingress (see frontend/templates/ingress.yaml), since
+        # this container only ever speaks plain HTTP behind the ingress.
+        # Note: nginx replaces (does not merge) inherited add_header
+        # directives in a location that declares its own add_header, so the
+        # /api/ proxy block below repeats any headers it needs.
+        add_header X-Content-Type-Options "nosniff" always;
+        add_header X-Frame-Options "SAMEORIGIN" always;
+        add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+        add_header Permissions-Policy "camera=(), microphone=(), geolocation=(), interest-cohort=()" always;
+        # Content-Security-Policy tuned to the site's real dependencies:
+        #   scripts  — self, Google Tag Manager/Analytics, Stripe
+        #   styles   — self + inline (styles are set inline in JSX) + Google Fonts
+        #   fonts    — Google Fonts CDN
+        #   images   — self, data URIs, and https (GA/Stripe pixels)
+        #   connect  — self, GA collect endpoint, Stripe API
+        #   frames   — Stripe (Checkout/Elements)
+        add_header Content-Security-Policy "default-src 'self'; script-src 'self' https://www.googletagmanager.com https://*.google-analytics.com https://js.stripe.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' https://*.google-analytics.com https://*.analytics.google.com https://*.googletagmanager.com https://api.stripe.com; frame-src https://js.stripe.com https://hooks.stripe.com https://maps.google.com https://www.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'self'" always;
 
         location / {
           root /usr/share/nginx/html;
@@ -38,14 +69,19 @@ data:
           proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
           proxy_set_header X-Forwarded-Proto $scheme;
       
-          # Add CORS headers
-          add_header 'Access-Control-Allow-Origin' '{{ .Values.allowedOrigin }}' always;
+          # CORS: echo back only the single matching allowed origin (see the
+          # map block above). Empty when the origin isn't allowed, which omits
+          # the header. Note: in practice the browser calls the API host
+          # directly, so these apply only if the same-origin /api proxy is used.
+          add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+          add_header 'Vary' 'Origin' always;
           add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
           add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Range,Authorization' always;
           add_header 'Access-Control-Allow-Credentials' 'true' always;
           
           if ($request_method = 'OPTIONS') {
-              add_header 'Access-Control-Allow-Origin' '{{ .Values.allowedOrigin }}' always;
+              add_header 'Access-Control-Allow-Origin' $cors_allow_origin always;
+              add_header 'Vary' 'Origin' always;
               add_header 'Access-Control-Allow-Methods' 'GET, POST, OPTIONS' always;
               add_header 'Access-Control-Allow-Headers' 'DNT,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type' always;
               add_header 'Access-Control-Allow-Credentials' 'true' always;
