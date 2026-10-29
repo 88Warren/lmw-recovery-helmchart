@@ -56,6 +56,34 @@ data:
           try_files $uri $uri/ /index.html;
         }
 
+        # ── Sitemap ───────────────────────────────────────────────────
+        # Serve the sitemap as application/xml. nginx's default for .xml is
+        # text/xml, and because we send X-Content-Type-Options: nosniff, a
+        # strict client won't reinterpret it — some crawlers/validators then
+        # fail to retrieve the sitemap. application/xml is the expected type.
+        location = /sitemap.xml {
+          root /usr/share/nginx/html;
+          types { } default_type application/xml;
+          add_header X-Content-Type-Options "nosniff" always;
+        }
+
+        # ── Clean URLs for the legal/policy documents ─────────────────
+        # Serve human- and crawler-friendly paths (/privacy, /terms,
+        # /risk-assessment) that internally map to the HTML files under
+        # /docs/. The old /docs/*.html URLs still resolve via `location /`.
+        location = /privacy {
+          root /usr/share/nginx/html;
+          try_files /docs/LMW_Recovery_Privacy_Policy.html =404;
+        }
+        location = /terms {
+          root /usr/share/nginx/html;
+          try_files /docs/LMW_Recovery_Terms_of_Service.html =404;
+        }
+        location = /risk-assessment {
+          root /usr/share/nginx/html;
+          try_files /docs/LMW_Recovery_Studio_Risk_Assessment.html =404;
+        }
+
         error_page 500 502 503 504 /50x.html;
         location = /50x.html {
           root /usr/share/nginx/html;
