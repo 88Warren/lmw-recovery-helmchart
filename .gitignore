@@ -4,8 +4,10 @@
 secrets.*.yaml
 backend/secrets.*.yaml
 frontend/secrets.*.yaml
+tracker/secrets.*.yaml
 
 # ...but keep the placeholder examples.
 !secrets.example.yaml
 !backend/secrets.example.yaml
 !frontend/secrets.example.yaml
+!tracker/secrets.example.yaml

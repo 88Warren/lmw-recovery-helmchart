@@ -1,0 +1,37 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Release.Name }}-ingress
+  namespace: {{ .Values.namespace }}
+  labels:
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/instance: {{ .Release.Name }}
+  annotations:
+    # cert-manager issues a Let's Encrypt cert for this subdomain automatically.
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    meta.helm.sh/release-name: {{ .Release.Name }}-ingress
+    meta.helm.sh/release-namespace: {{ .Values.namespace }}
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/hsts: "true"
+    nginx.ingress.kubernetes.io/hsts-max-age: "63072000"
+    nginx.ingress.kubernetes.io/hsts-include-subdomains: "true"
+    nginx.ingress.kubernetes.io/hsts-preload: "true"
+    # The app serves both the React SPA and the /api/* routes from the same
+    # Node process, so no path rewriting is needed — pass everything through.
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - {{ .Values.app.host | quote }}
+      secretName: tracker-lmwrecovery-tls
+  rules:
+    - host: {{ .Values.app.host | quote }}
+      http:
+        paths:
+          - path: {{ .Values.app.path }}
+            pathType: {{ .Values.app.pathType }}
+            backend:
+              service:
+                name: {{ .Release.Name }}-service
+                port:
+                  number: {{ .Values.app.port }}

@@ -1,0 +1,59 @@
+# ── Deployment basics ─────────────────────────────────────────────────────────
+namespace: lmw-recovery
+env: production
+replicaCount: 1
+platform: linux/amd64
+
+image:
+  pullPolicy: Always
+
+# ── App container ─────────────────────────────────────────────────────────────
+app:
+  image:
+    repository: index.docker.io/lmwcode/tracker
+    tag: v1.0.0
+  host: tracker.lmwrecovery.co.uk
+  port: 3001
+  path: /
+  pathType: Prefix
+  type: ClusterIP
+  protocol: TCP
+  applicationType: tracker
+
+# ── Database (SQLite on a persistent volume) ──────────────────────────────────
+# The Node server uses an embedded SQLite file. The file lives on a
+# PersistentVolume mounted at /data (matches the Dockerfile's DB_PATH=/data).
+database:
+  path: /data
+
+storage:
+  storageClass: local-path
+  size: 1Gi
+
+# ── Secrets ───────────────────────────────────────────────────────────────────
+# DO NOT commit real values here. Supply at deploy time via secrets.prod.yaml
+# (git-ignored on the VPS) or --set flags.
+secrets:
+  basicAuthUser: ""
+  basicAuthPass: ""
+  googleClientId: ""
+  googleClientSecret: ""
+
+# ── Non-secret config ─────────────────────────────────────────────────────────
+googleRedirectUri: "https://tracker.lmwrecovery.co.uk/api/calendar/callback"
+
+# ── Health probes ─────────────────────────────────────────────────────────────
+livenessProbe:
+  endpoint: /api/health
+  initialDelaySeconds: 15
+  timeoutSeconds: 5
+  periodSeconds: 30
+  failureThreshold: 3
+  successThreshold: 1
+readinessProbe:
+  endpoint: /api/health
+  initialDelaySeconds: 10
+  timeoutSeconds: 5
+  periodSeconds: 20
+  failureThreshold: 3
+  successThreshold: 1

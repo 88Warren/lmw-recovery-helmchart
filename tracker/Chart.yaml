@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tracker-helmchart
+description: Helm chart for the personal goals and habits tracker
+type: application
+version: 0.1.0
+appVersion: "1.0.0"

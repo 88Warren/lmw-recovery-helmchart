@@ -11,6 +11,7 @@ on:
     paths:
       - 'backend/**'
       - 'frontend/**'
+      - 'tracker/**'
   workflow_dispatch:
     inputs:
       target:
@@ -18,7 +19,7 @@ on:
         required: true
         default: both
         type: choice
-        options: [both, backend, frontend]
+        options: [both, backend, frontend, tracker]
 
 # ── Shared config ─────────────────────────────────────────────────────────────
 env:
@@ -41,6 +42,7 @@ jobs:
     outputs:
       backend:  ${{ steps.decide.outputs.backend }}
       frontend: ${{ steps.decide.outputs.frontend }}
+      tracker:  ${{ steps.decide.outputs.tracker }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -53,6 +55,7 @@ jobs:
           set -eu
           BACKEND=false
           FRONTEND=false
+          TRACKER=false
 
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             TARGET="${{ github.event.inputs.target }}"
@@ -60,10 +63,10 @@ jobs:
               both)     BACKEND=true; FRONTEND=true ;;
               backend)  BACKEND=true ;;
               frontend) FRONTEND=true ;;
+              tracker)  TRACKER=true ;;
             esac
           else
             BEFORE="${{ github.event.before }}"
-            # First push to a branch has an all-zero "before" SHA — fall back to HEAD~1.
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
               CHANGED=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || git ls-files)
             else
@@ -72,11 +75,13 @@ jobs:
             echo "Changed files:"; echo "$CHANGED"
             if echo "$CHANGED" | grep -q '^backend/';  then BACKEND=true;  fi
             if echo "$CHANGED" | grep -q '^frontend/'; then FRONTEND=true; fi
+            if echo "$CHANGED" | grep -q '^tracker/';  then TRACKER=true;  fi
           fi
 
           echo "backend=$BACKEND"   >> "$GITHUB_OUTPUT"
           echo "frontend=$FRONTEND" >> "$GITHUB_OUTPUT"
-          echo "Deploy backend=$BACKEND frontend=$FRONTEND"
+          echo "tracker=$TRACKER"   >> "$GITHUB_OUTPUT"
+          echo "Deploy backend=$BACKEND frontend=$FRONTEND tracker=$TRACKER"
 
   # ────────────────────────────────────────────────────────────────────────────
   # Lint both charts before touching the cluster.
@@ -100,6 +105,10 @@ jobs:
         if: needs.changes.outputs.frontend == 'true'
         run: helm lint ./frontend
 
+      - name: Lint tracker
+        if: needs.changes.outputs.tracker == 'true'
+        run: helm lint ./tracker
+
   # ────────────────────────────────────────────────────────────────────────────
   # Deploy over SSH. The chart lives on the VPS; we git-pull then helm upgrade.
   # Secrets stay on the VPS in backend/secrets.prod.yaml — never in GitHub.
@@ -112,7 +121,7 @@ jobs:
     name: Sync & helm upgrade
     runs-on: ubuntu-latest
     needs: [changes, lint]
-    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true'
+    if: needs.changes.outputs.backend == 'true' || needs.changes.outputs.frontend == 'true' || needs.changes.outputs.tracker == 'true'
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
@@ -167,6 +176,24 @@ jobs:
               kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/lmwrecovery-frontend-deployment --timeout=180s
             fi
 
+            TRACKER="${{ needs.changes.outputs.tracker }}"
+
+            if [ "$TRACKER" = "true" ]; then
+              echo "── Deploying tracker chart ───────────────────────"
+              SECRETS_ARG=""
+              if [ -f "${{ env.CHART_DIR }}/tracker/secrets.prod.yaml" ]; then
+                SECRETS_ARG="-f ${{ env.CHART_DIR }}/tracker/secrets.prod.yaml"
+              else
+                echo "WARNING: tracker/secrets.prod.yaml not found on VPS — reusing previously applied secret values"
+              fi
+              helm upgrade --install tracker-release "${{ env.CHART_DIR }}/tracker" \
+                --namespace "${{ env.NAMESPACE }}" \
+                $SECRETS_ARG \
+                --reset-then-reuse-values \
+                --wait --timeout 5m
+              kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/tracker-release-deployment --timeout=180s
+            fi
+
             echo "── Done ──────────────────────────────────────────"
 
       - name: Summary
@@ -177,3 +204,4 @@ jobs:
           echo "|---|---|" >> $GITHUB_STEP_SUMMARY
           echo "| backend  | ${{ needs.changes.outputs.backend }} |"  >> $GITHUB_STEP_SUMMARY
           echo "| frontend | ${{ needs.changes.outputs.frontend }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| tracker  | ${{ needs.changes.outputs.tracker }} |"  >> $GITHUB_STEP_SUMMARY
