@@ -12,6 +12,8 @@ on:
       - 'backend/**'
       - 'frontend/**'
       - 'tracker/**'
+  repository_dispatch:
+    types: [tracker-deploy]
   workflow_dispatch:
     inputs:
       target:
@@ -65,6 +67,8 @@ jobs:
               frontend) FRONTEND=true ;;
               tracker)  TRACKER=true ;;
             esac
+          elif [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            TRACKER=true
           else
             BEFORE="${{ github.event.before }}"
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
@@ -186,9 +190,17 @@ jobs:
               else
                 echo "WARNING: tracker/secrets.prod.yaml not found on VPS — reusing previously applied secret values"
               fi
+              # If triggered by repository_dispatch from the app repo, use the
+              # version it passed. Otherwise reuse whatever tag is already set.
+              IMAGE_TAG_ARG=""
+              if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+                IMAGE_TAG_ARG="--set app.image.tag=${{ github.event.client_payload.version }}"
+                echo "Setting image tag to ${{ github.event.client_payload.version }}"
+              fi
               helm upgrade --install tracker-release "${{ env.CHART_DIR }}/tracker" \
                 --namespace "${{ env.NAMESPACE }}" \
                 $SECRETS_ARG \
+                $IMAGE_TAG_ARG \
                 --reset-then-reuse-values \
                 --wait --timeout 5m
               kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/tracker-release-deployment --timeout=180s
