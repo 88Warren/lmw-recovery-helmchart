@@ -13,7 +13,7 @@ on:
       - 'frontend/**'
       - 'tracker/**'
   repository_dispatch:
-    types: [tracker-deploy]
+    types: [backend-deploy, frontend-deploy, tracker-deploy]
   workflow_dispatch:
     inputs:
       target:
@@ -68,7 +68,11 @@ jobs:
               tracker)  TRACKER=true ;;
             esac
           elif [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            TRACKER=true
+            case "${{ github.event.action }}" in
+              backend-deploy)  BACKEND=true ;;
+              frontend-deploy) FRONTEND=true ;;
+              tracker-deploy)  TRACKER=true ;;
+            esac
           else
             BEFORE="${{ github.event.before }}"
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
@@ -163,9 +167,15 @@ jobs:
               else
                 echo "WARNING: backend/secrets.prod.yaml not found on VPS — reusing previously applied secret values"
               fi
+              IMAGE_TAG_ARG=""
+              if [ "${{ github.event.action }}" = "backend-deploy" ]; then
+                IMAGE_TAG_ARG="--set api.image.tag=${{ github.event.client_payload.version }}"
+                echo "Setting image tag to ${{ github.event.client_payload.version }}"
+              fi
               helm upgrade --install lmwrecovery-backend "${{ env.CHART_DIR }}/backend" \
                 --namespace "${{ env.NAMESPACE }}" \
                 $SECRETS_ARG \
+                $IMAGE_TAG_ARG \
                 --reset-then-reuse-values \
                 --wait --timeout 5m
               kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/lmwrecovery-backend-deployment --timeout=180s
@@ -173,8 +183,14 @@ jobs:
 
             if [ "$FRONTEND" = "true" ]; then
               echo "── Deploying frontend chart ──────────────────────"
+              IMAGE_TAG_ARG=""
+              if [ "${{ github.event.action }}" = "frontend-deploy" ]; then
+                IMAGE_TAG_ARG="--set webserver.image.tag=${{ github.event.client_payload.version }}"
+                echo "Setting image tag to ${{ github.event.client_payload.version }}"
+              fi
               helm upgrade --install lmwrecovery-frontend "${{ env.CHART_DIR }}/frontend" \
                 --namespace "${{ env.NAMESPACE }}" \
+                $IMAGE_TAG_ARG \
                 --reset-then-reuse-values \
                 --wait --timeout 5m
               kubectl -n "${{ env.NAMESPACE }}" rollout status deploy/lmwrecovery-frontend-deployment --timeout=180s
